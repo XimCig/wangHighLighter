@@ -6,7 +6,6 @@
 (function (window, $, undefined) {
     if (!$) {
         throw new Error('请检查是否引用了jQuery...');
-        return;
     }
     if (window.wangHighLighter) {
         return;
@@ -14,18 +13,18 @@
 
     //默认的正则表达式
     var basicRegs = {
-        rkeyword: /^0$/,  //默认不显示任何关键字
-        rstr: /(['"]).*?\1/gm,  // 默认【"..." 或 '...'】
-        rlineComment: /\/\/.*?(?=(<br\/>)|$)/gm,  // 默认【//...】
-        rblockComment: /\/\*.*?\*\//gm,  //默认【/*...*/】
-        rLabel: /<.*?>/gm  // <> 标签
-    },
-    //默认的样式（字号、行高、字体）
-    basicStyle = {
-        fontSize: '14px',
-        lineHeight: '20px',
-        fontFamily: 'Consolas,Courier New,Inconsolata-g,DejaVu Sans Mono,微软雅黑,宋体'
-    };
+            rkeyword: /^0$/,  //默认不显示任何关键字
+            rstr: /(['"]).*?[^\\]\1/gm,  // 默认【"..." 或 '...'】 （包含字符和字符串两种类型）
+            rlineComment: /\/\/.*?(?=(<br\/>)|$)/gm,  // 默认【//...】
+            rblockComment: /\/\*.*?\*\//gm,  //默认【/*...*/】
+            rLabel: /<.*?>/gm  // <> 标签
+        },
+        //默认的样式（字号、行高、字体）
+        basicStyle = {
+            fontSize: '14px',
+            lineHeight: '20px',
+            fontFamily: 'Consolas,Courier New,Inconsolata-g,DejaVu Sans Mono,微软雅黑,宋体'
+        };
 
     /*构造函数
     * rkeywords：关键字正则
@@ -44,9 +43,9 @@
         this.wrapLabel = '<br/>';
         this.keywordLabel = 'b';
 
-        this.fontSize = style && style.fontSize || basicStyle.fontSize;
-        this.lineHeight = style && style.lineHeight || basicStyle.lineHeight;
-        this.fontFamily = style && style.fontFamily || basicStyle.fontFamily;
+        this.fontSize = (style && style.fontSize) || basicStyle.fontSize;
+        this.lineHeight = (style && style.lineHeight) || basicStyle.lineHeight;
+        this.fontFamily = (style && style.fontFamily) || basicStyle.fontFamily;
     }
     HL.prototype = {
         constructor: HL,
@@ -68,7 +67,7 @@
                     if (that.rLabel.test(a)) {
                         a = a.replace(that.rLabel, function (a) {
                             if (a === that.wrapLabel) {
-                                //考虑多行注释中间的换行
+                                //考虑多行字符串中间的换行
                                 return '</span>' + a + '<span style=$strStyle$>';
                             }
                             return '';
@@ -125,8 +124,8 @@
             code = this.lineCommentHL(code);
             code = this.blockCommentHL(code);
             code = code.replace(/\$keywordStyle\$/gm, '"color:' + theme.keywordColor + '"')
-                               .replace(/\$strStyle\$/gm, '"color:' + theme.strColor + '"')
-                               .replace(/\$commentStyle\$/gm, '"color:' + theme.commentColor + '"');
+                       .replace(/\$strStyle\$/gm, '"color:' + theme.strColor + '"')
+                       .replace(/\$commentStyle\$/gm, '"color:' + theme.commentColor + '"');
             //其他 自定义高亮
             if (this.otherHL && typeof this.otherHL === 'function') {
                 code = this.otherHL(code);
@@ -140,7 +139,7 @@
                                      .replace('${3}', theme.color),
                 tbody = '',
 
-                trOddTemp = '<tr valign="top" style="background-color:${0}"> ${content} </tr>', //奇数
+                trOddTemp = '<tr valign="top" style="background-color:${0};"> ${content} </tr>', //奇数
                 trOddTemp = trOddTemp.replace('${0}', theme.oddBgColor),
                 trEvenTemp = '<tr valign="top" style="background-color:${0};"> ${content} </tr>', //偶数
                 trEvenTemp = trEvenTemp.replace('${0}', theme.evenBgColor),
@@ -158,7 +157,8 @@
                 //按换行分数组
                 lineArray = code.split(this.wrapLabel),
                 length = lineArray.length,
-                itemForLoop;
+                itemForLoop,
+                i;
 
             for (i = 0; i < length; i++) {
                 itemForLoop = lineArray[i];
@@ -209,16 +209,16 @@
                 strColor: '#0000ff',  //字符串颜色
                 commentColor: '#008200'  //注释颜色
             },
-            django: {
-                evenBgColor: '#0a2b1d',  //偶数行背景色
-                oddBgColor: '#0b2f20',  //奇数行背景色
-                numColor: '#437252',  //行号颜色
-                numBorderColor: '#41a83e',  //行号边框颜色
-                numBorderWidth: '3px',  //行号边框宽度
-                color: '#f8f8f8',  //常规颜色
-                keywordColor: '#96dd3b',  //关键字颜色
-                strColor: '#9df39f',  //字符串颜色
-                commentColor: '#336442'  //注释颜色
+            'visual Studio': {
+                evenBgColor: '#ffffff',  //偶数行背景色
+                oddBgColor: '#ffffff',  //奇数行背景色
+                numColor: '#2b91af',  //行号颜色
+                numBorderColor: '#a5a5a5',  //行号边框颜色
+                numBorderWidth: '1px',  //行号边框宽度
+                color: '#000000',  //常规颜色
+                keywordColor: '#0000ff',  //关键字颜色
+                strColor: '#a31515',  //字符串颜色
+                commentColor: '#008000'  //注释颜色
             },
             eclipse: {
                 evenBgColor: '#ffffff',  //偶数行背景色
@@ -230,6 +230,28 @@
                 keywordColor: '#7f0055',  //关键字颜色
                 strColor: '#2a00ff',  //字符串颜色
                 commentColor: '#647ecb'  //注释颜色
+            },
+            sublime: {
+                evenBgColor: '#272822',  //偶数行背景色
+                oddBgColor: '#272822',  //奇数行背景色
+                numColor: '#8f908a',  //行号颜色
+                numBorderColor: '#464741',  //行号边框颜色
+                numBorderWidth: '1px',  //行号边框宽度
+                color: '#f8f8f2',  //常规颜色
+                keywordColor: '#e92744',  //关键字颜色
+                strColor: '#ae81ff',  //字符串颜色
+                commentColor: '#75715e'  //注释颜色
+            },
+            django: {
+                evenBgColor: '#0a2b1d',  //偶数行背景色
+                oddBgColor: '#0b2f20',  //奇数行背景色
+                numColor: '#437252',  //行号颜色
+                numBorderColor: '#41a83e',  //行号边框颜色
+                numBorderWidth: '3px',  //行号边框宽度
+                color: '#f8f8f8',  //常规颜色
+                keywordColor: '#96dd3b',  //关键字颜色
+                strColor: '#9df39f',  //字符串颜色
+                commentColor: '#336442'  //注释颜色
             },
             emacs: {
                 evenBgColor: '#0f0f0f',  //偶数行背景色
@@ -279,7 +301,7 @@
         langs: {
 
             actionScript: function (code, theme) {
-                var keywords = '-Infinity ...rest Array as AS3 Boolean break case catch const continue Date decodeURI ' +
+                var keywords = '-Infinity rest Array as AS3 Boolean break case catch const continue Date decodeURI ' +
 					          'decodeURIComponent default delete do dynamic each else encodeURI encodeURIComponent escape ' +
 					          'extends false final finally flash_proxy for get if implements import in include Infinity ' +
 					          'instanceof int internal is isFinite isNaN isXMLName label namespace NaN native new null ' +
@@ -515,7 +537,7 @@
 					            'lambda not or pass print raise return try yield while',
                    rkeywords = keywordsToReg(keywords),
                    //字符串
-                   rstr = /(['"(''')(""")]).*?\1/gm,
+                   rstr = /(['"(''')(""")]).*?[^\\]\1/gm,
                    //行注释
                    rlineComment = /#.*?(?=(<br\/>)|$)/gm,
                    //python没有块注释
@@ -597,7 +619,7 @@
 					            'Variant When While With WithEvents WriteOnly Xor',
                    rkeywords = keywordsToReg(keywords),
                    //字符串
-                   rstr = /(").*?\1/gm,
+                   rstr = /(").*?[^\\]\1/gm,
                    //行注释
                    rlineComment = /'.*?(?=(<br\/>)|$)/gm,
                    //vb没有块注释
@@ -632,12 +654,10 @@
             if (!lang) {
                 return;
             }
-
             theme = typeof theme === 'string' ? window.wangHighLighter.themes[theme] : undefined;
             if (!theme) {
                 return;
             }
-
             return lang(code, theme);
         },
         /*（接口）获取语言数组
