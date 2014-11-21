@@ -1,7 +1,7 @@
 ﻿/* wangHighLighter 
 *  1.0.0
 * 王福朋
-* 2014-11-19
+* 2014-11-21
 */
 (function (window, $, undefined) {
     if (!$) {
@@ -10,9 +10,9 @@
     if (window.wangHighLighter) {
         return;
     }
-
-    //默认的正则表达式
-    var basicRegs = {
+    var
+        //默认的正则表达式
+        basicRegs = {
             rkeyword: /^0$/,  //默认不显示任何关键字
             rstr: /(['"]).*?[^\\]\1/gm,  // 默认【"..." 或 '...'】 （包含字符和字符串两种类型）
             rlineComment: /\/\/.*?(?=(<br\/>)|$)/gm,  // 默认【//...】
@@ -23,7 +23,8 @@
         basicStyle = {
             fontSize: '14px',
             lineHeight: '20px',
-            fontFamily: 'Consolas,Courier New,Inconsolata-g,DejaVu Sans Mono,微软雅黑,宋体'
+            fontFamily: 'Consolas,Courier New,Inconsolata-g,DejaVu Sans Mono,微软雅黑,宋体',
+            keywordBold: true
         };
 
     /*构造函数
@@ -41,11 +42,16 @@
         this.rLabel = basicRegs.rLabel;
 
         this.wrapLabel = '<br/>';
-        this.keywordLabel = 'b';
 
         this.fontSize = (style && style.fontSize) || basicStyle.fontSize;
         this.lineHeight = (style && style.lineHeight) || basicStyle.lineHeight;
         this.fontFamily = (style && style.fontFamily) || basicStyle.fontFamily;
+
+        var keywordBold = basicStyle.keywordBold;
+        if (style && style.keywordBold !== undefined) {
+            keywordBold = style.keywordBold;
+        }
+        this.keywordLabel = !!keywordBold ? 'b' : 'span';
     }
     HL.prototype = {
         constructor: HL,
@@ -370,7 +376,7 @@
                    rstr = /^0$/,
                    //css没有行注释
                    rlineComment = /^0$/;
-                hl = new HL(rkeywords, rstr, rlineComment);
+                hl = new HL(rkeywords, rstr, rlineComment, undefined, { keywordBold: false });
                 return hl.codeHL(code, theme);
             },
 
@@ -416,6 +422,19 @@
                 var keywords = 'break default func interface select case defer go map struct chan else goto package switch const fallthrough if range type continue for import return var',
                     rkeywords = keywordsToReg(keywords),
                     hl = new HL(rkeywords);
+                return hl.codeHL(code, theme);
+            },
+
+            html:function (code,theme) {
+                var
+                    //关键字
+                    rkeywords = /&lt;(?!!--)\/?((html)|(head)|(body)|(style)|(script)|(DOCTYPE)).*?&gt;/igm,
+                    //没有行注释
+                    rlineComment = /^0$/,
+                    //块注释
+                    rblockComment = /&lt;!--.*?--&gt;/gm,
+                    hl = new HL(rkeywords, undefined, rlineComment, rblockComment, { keywordBold: false });
+
                 return hl.codeHL(code, theme);
             },
 
@@ -630,17 +649,14 @@
 
             xml: function (code, theme) {
                 var
-                   //关键字
-                   rkeywords = /^0$/;
-                   //没有行注释
-                   rlineComment = /^0$/,
-                   //块注释
-                   rblockComment = /&lt;!--.*?--&gt;/gm,
-                   hl = new HL(rkeywords, undefined, rlineComment, rblockComment),
-                   code;
-
-                code = hl.codeHL(code, theme);
-                return code
+                    //关键字
+                    rkeywords = /^0$/,
+                    //没有行注释
+                    rlineComment = /^0$/,
+                    //块注释
+                    rblockComment = /&lt;!--.*?--&gt;/gm,
+                    hl = new HL(rkeywords, undefined, rlineComment, rblockComment);
+                return hl.codeHL(code, theme);
             }
         },
 
