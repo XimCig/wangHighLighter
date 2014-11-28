@@ -13,8 +13,9 @@
     var
         //默认的正则表达式
         basicRegs = {
-            rkeyword: /^0$/,  //默认不显示任何关键字
+            rkeyword: /^\s$/, 
             rstr: /(['"]).*?[^\\]\1/gm,  // 默认【"..." 或 '...'】 （包含字符和字符串两种类型）
+            rreg: /^\s$/,
             rlineComment: /\/\/.*?(?=(<br\/>)|$)/gm,  // 默认【//...】
             rblockComment: /\/\*.*?\*\//gm,  //默认【/*...*/】
             rLabel: /<.*?>/gm  // <> 标签
@@ -33,10 +34,12 @@
     * rlineComment：行注释正则
     * rblockComment： 块注释正则
     * style：样式（字号、行高、字体）
+    * rreg: 正则表达式的正则
     */
-    function HL(rkeywords, rstr, rlineComment, rblockComment, style) {
+    function HL(rkeywords, rstr, rlineComment, rblockComment, style, rreg) {
         this.rkeywords = rkeywords || basicRegs.rkeyword;
         this.rstr = rstr || basicRegs.rstr;
+        this.rreg = rreg || basicRegs.rreg;
         this.rlineComment = rlineComment || basicRegs.rlineComment;
         this.rblockComment = rblockComment || basicRegs.rblockComment;
         this.rLabel = basicRegs.rLabel;
@@ -56,51 +59,91 @@
     HL.prototype = {
         constructor: HL,
 
+        keywordsDictionary: [],
         keywordsHL: function (code) {
-            var that = this;
-            if (this.rkeywords.test(code)) {
-                code = code.replace(this.rkeywords, function (a) {
+            var that = this,
+                i = 0;
+            if (that.rkeywords.test(code)) {
+                code = code.replace(that.rkeywords, function (a) {
+                    that.keywordsDictionary[i] = a;
+                    a = '$keywordIndex{' + i + '}';
+                    i++;
                     return '<' + that.keywordLabel + ' style=$keywordStyle$>' + a + '</' + that.keywordLabel + '>';
                 });
             }
             return code;
         },
+
+        strDictionary: [],
         strHL: function (code) {
-            var that = this;
-            if (this.rstr.test(code)) {
-                code = code.replace(this.rstr, function (a) {
+            var that = this,
+                i = 0;
+            if (that.rstr.test(code)) {
+                code = code.replace(that.rstr, function (a) {
                     //去掉标签
                     if (that.rLabel.test(a)) {
                         a = a.replace(that.rLabel, function (a) {
                             if (a === that.wrapLabel) {
                                 //考虑多行字符串中间的换行
+                                that.strDictionary[i] = a;
+                                a = '$strIndx{' + i + '}';;
+                                i++;
                                 return '</span>' + a + '<span style=$strStyle$>';
                             }
                             return '';
                         });
                     }
+                    that.strDictionary[i] = a;
+                    a = '$strIndex{' + i + '}';;
+                    i++;
                     return '<span style=$strStyle$>' + a + '</span>';
                 });
             }
             return code;
         },
-        lineCommentHL: function (code) {
-            var that = this;
-            if (this.rlineComment.test(code)) {
-                code = code.replace(this.rlineComment, function (a) {
+
+        regDictionary: [],
+        regHL: function (code) {
+            var that = this,
+                i = 0;
+            if (that.rreg.test(code)) {
+                code = code.replace(that.rreg, function (a) {
                     //去掉标签
                     if (that.rLabel.test(a)) {
                         a = a.replace(that.rLabel, '');
                     }
+                    that.regDictionary[i] = a;
+                    a = '$regIndex{' + i + '}';;
+                    i++;
+                    return '<span style=$regStyle$>' + a + '</span>';
+                });
+            }
+            return code;
+        },
+
+        lineCommentDictionary: [],
+        lineCommentHL: function (code) {
+            var that = this,
+                i = 0;
+            if (that.rlineComment.test(code)) {
+                code = code.replace(that.rlineComment, function (a) {
+                    //去掉标签
+                    if (that.rLabel.test(a)) {
+                        a = a.replace(that.rLabel, '');
+                    }
+                    that.lineCommentDictionary[i] = a;
+                    a = '$lineCommentIndex{' + i + '}';;
+                    i++;
                     return '<span style=$commentStyle$>' + a + '</span>';
                 });
             }
             return code;
         },
+
         blockCommentHL: function (code) {
             var that = this;
-            if (this.rblockComment.test(code)) {
-                code = code.replace(this.rblockComment, function (a) {
+            if (that.rblockComment.test(code)) {
+                code = code.replace(that.rblockComment, function (a) {
                     //去掉标签
                     if (that.rLabel.test(a)) {
                         a = a.replace(that.rLabel, function (a) {
@@ -117,6 +160,12 @@
             return code;
         },
         codeHL: function (code, theme) {
+            var i,
+                keywordLength,
+                strLength,
+                regLength,
+                lineCommentLength;
+
             //转义特殊字符
             code = code.replace(/&/gm, '&amp;')
                        .replace(/</gm, '&lt;')
@@ -127,11 +176,29 @@
             //关键字、字符串、注释
             code = this.keywordsHL(code);
             code = this.strHL(code);
+            code = this.regHL(code);
             code = this.lineCommentHL(code);
             code = this.blockCommentHL(code);
             code = code.replace(/\$keywordStyle\$/gm, '"color:' + theme.keywordColor + '"')
                        .replace(/\$strStyle\$/gm, '"color:' + theme.strColor + '"')
+                       .replace(/\$regStyle\$/gm, '"color:' + theme.regColor + '"')
                        .replace(/\$commentStyle\$/gm, '"color:' + theme.commentColor + '"');
+
+            //查询字典，还原内容
+            for (i = 0, keywordLength = this.keywordsDictionary.length; i < keywordLength; i++) {
+                code = code.replace('$keywordIndex{' + i + '}', this.keywordsDictionary[i]);
+            }
+            for (i = 0, strLength = this.strDictionary.length; i < strLength; i++) {
+                code = code.replace('$strIndex{' + i + '}', this.strDictionary[i]);
+            }
+            for (i = 0, regLength = this.regDictionary.length; i < regLength; i++) {
+                code = code.replace('$regIndex{' + i + '}', this.regDictionary[i]);
+            }
+            for (i = 0, lineCommentLength = this.lineCommentDictionary.length; i < lineCommentLength; i++) {
+                code = code.replace('$lineCommentIndex{' + i + '}', this.lineCommentDictionary[i]);
+            }
+            this.keywordsDictionary = this.strDictionary = this.regDictionary = this.lineCommentDictionary = []; //清空字典
+
             //其他 自定义高亮
             if (this.otherHL && typeof this.otherHL === 'function') {
                 code = this.otherHL(code);
@@ -143,18 +210,18 @@
                                      .replace('${1}', this.fontSize)
                                      .replace('${2}', this.fontFamily)
                                      .replace('${3}', theme.color),
-                tbody = '',
-
+                
                 trOddTemp = '<tr valign="top" style="background-color:${0};"> ${content} </tr>', //奇数
                 trOddTemp = trOddTemp.replace('${0}', theme.oddBgColor),
                 trEvenTemp = '<tr valign="top" style="background-color:${0};"> ${content} </tr>', //偶数
                 trEvenTemp = trEvenTemp.replace('${0}', theme.evenBgColor),
+                tr = '',
+                trArray = [],
 
                 tdNumTemp = '<td style="border-right-color:${0}; border-right-width:${1}; color:${2}; border-right-style:solid; text-align:right; padding-right:5px; width:40px;"> ${content} </td>',
                 tdNumTemp = tdNumTemp.replace('${0}', theme.numBorderColor)
                                      .replace('${1}', theme.numBorderWidth)
                                      .replace('${2}', theme.numColor),
-
                 tdNum = '',
 
                 tdCodeTemp = '<td style="padding-left:10px; text-align:left;">${content}</td>',
@@ -163,8 +230,7 @@
                 //按换行分数组
                 lineArray = code.split(this.wrapLabel),
                 length = lineArray.length,
-                itemForLoop,
-                i;
+                itemForLoop;
 
             for (i = 0; i < length; i++) {
                 itemForLoop = lineArray[i];
@@ -174,12 +240,13 @@
                 tdCode = tdCodeTemp.replace('${content}', itemForLoop);
 
                 if (i % 2 === 0) {
-                    tbody += trOddTemp.replace('${content}', tdNum + tdCode);
+                    tr = trOddTemp.replace('${content}', tdNum + tdCode);
                 } else {
-                    tbody += trEvenTemp.replace('${content}', tdNum + tdCode);
+                    tr = trEvenTemp.replace('${content}', tdNum + tdCode);
                 }
+                trArray[i] = tr;
             }
-            return tableTemp.replace('${tbody}', tbody);
+            return tableTemp.replace('${tbody}', trArray.join(''));
         }
     };
 
@@ -188,7 +255,7 @@
     */
     function keywordsToReg(keywords) {
         if (typeof keywords !== 'string') {
-            return /^0$/;
+            return /^\s$/;
         }
         //去掉前后空格
         keywords = keywords.replace(/^\s+/g, '').replace(/\s+$/g, '');
@@ -203,107 +270,6 @@
 
     //wangHighLighter 对象
     window.wangHighLighter = {
-        themes: {
-            simple: {
-                evenBgColor: '#ffffff',  //偶数行背景色
-                oddBgColor: '#f1f1f1',  //奇数行背景色
-                numColor: '#c7c7c7',  //行号颜色
-                numBorderColor: '#6ce26c',  //行号边框颜色
-                numBorderWidth: '3px',  //行号边框宽度
-                color: '#000000',  //常规颜色
-                keywordColor: '#1a76a3',  //关键字颜色
-                strColor: '#0000ff',  //字符串颜色
-                commentColor: '#008200'  //注释颜色
-            },
-            'visual Studio': {
-                evenBgColor: '#ffffff',  //偶数行背景色
-                oddBgColor: '#ffffff',  //奇数行背景色
-                numColor: '#2b91af',  //行号颜色
-                numBorderColor: '#a5a5a5',  //行号边框颜色
-                numBorderWidth: '1px',  //行号边框宽度
-                color: '#000000',  //常规颜色
-                keywordColor: '#0000ff',  //关键字颜色
-                strColor: '#a31515',  //字符串颜色
-                commentColor: '#008000'  //注释颜色
-            },
-            eclipse: {
-                evenBgColor: '#ffffff',  //偶数行背景色
-                oddBgColor: '#ffffff',  //奇数行背景色
-                numColor: '#848484',  //行号颜色
-                numBorderColor: '#d4d0c8',  //行号边框颜色
-                numBorderWidth: '1px',  //行号边框宽度
-                color: '#000000',  //常规颜色
-                keywordColor: '#7f0055',  //关键字颜色
-                strColor: '#2a00ff',  //字符串颜色
-                commentColor: '#647ecb'  //注释颜色
-            },
-            sublime: {
-                evenBgColor: '#272822',  //偶数行背景色
-                oddBgColor: '#272822',  //奇数行背景色
-                numColor: '#8f908a',  //行号颜色
-                numBorderColor: '#464741',  //行号边框颜色
-                numBorderWidth: '1px',  //行号边框宽度
-                color: '#f8f8f2',  //常规颜色
-                keywordColor: '#e92744',  //关键字颜色
-                strColor: '#ae81ff',  //字符串颜色
-                commentColor: '#75715e'  //注释颜色
-            },
-            django: {
-                evenBgColor: '#0a2b1d',  //偶数行背景色
-                oddBgColor: '#0b2f20',  //奇数行背景色
-                numColor: '#437252',  //行号颜色
-                numBorderColor: '#41a83e',  //行号边框颜色
-                numBorderWidth: '3px',  //行号边框宽度
-                color: '#f8f8f8',  //常规颜色
-                keywordColor: '#96dd3b',  //关键字颜色
-                strColor: '#9df39f',  //字符串颜色
-                commentColor: '#336442'  //注释颜色
-            },
-            emacs: {
-                evenBgColor: '#0f0f0f',  //偶数行背景色
-                oddBgColor: '#000000',  //奇数行背景色
-                numColor: '#bdbdbd',  //行号颜色
-                numBorderColor: '#990000',  //行号边框颜色
-                numBorderWidth: '3px',  //行号边框宽度
-                color: '#d3d3d3',  //常规颜色
-                keywordColor: '#01e7e7',  //关键字颜色
-                strColor: '#ff9e7b',  //字符串颜色
-                commentColor: '#ff7d27'  //注释颜色
-            },
-            fadeToGrey: {
-                evenBgColor: '#000000',  //偶数行背景色
-                oddBgColor: '#121212',  //奇数行背景色
-                numColor: '#c3c3c3',  //行号颜色
-                numBorderColor: '#3185b9',  //行号边框颜色
-                numBorderWidth: '3px',  //行号边框宽度
-                color: '#dddddd',  //常规颜色
-                keywordColor: '#d01d33',  //关键字颜色
-                strColor: '#e3e658',  //字符串颜色
-                commentColor: '#696854'  //注释颜色
-            },
-            midNight: {
-                evenBgColor: '#0f192a',  //偶数行背景色
-                oddBgColor: '#0f192a',  //奇数行背景色
-                numColor: '#345067',  //行号颜色
-                numBorderColor: '#435a5f',  //行号边框颜色
-                numBorderWidth: '3px',  //行号边框宽度
-                color: '#d1edff',  //常规颜色
-                keywordColor: '#b43d3d',  //关键字颜色
-                strColor: '#1dc116',  //字符串颜色
-                commentColor: '#428bdd'  //注释颜色
-            },
-            rDark: {
-                evenBgColor: '#1b2426',  //偶数行背景色
-                oddBgColor: '#1b2426',  //奇数行背景色
-                numColor: '#b9bdb6',  //行号颜色
-                numBorderColor: '#435a5f',  //行号边框颜色
-                numBorderWidth: '3px',  //行号边框宽度
-                color: '#b9bdb6',  //常规颜色
-                keywordColor: '#5ba1cf',  //关键字颜色
-                strColor: '#5ce638',  //字符串颜色
-                commentColor: '#878a85'  //注释颜色
-            }
-        },
         langs: {
 
             actionScript: function (code, theme) {
@@ -373,9 +339,9 @@
 					            'vertical-align visibility voice-family volume white-space widows width widths word-spacing x-height z-index',
                    rkeywords = keywordsToReg(keywords),
                    //css没有字符串
-                   rstr = /^0$/,
+                   rstr = /^\s$/,
                    //css没有行注释
-                   rlineComment = /^0$/;
+                   rlineComment = /^\s$/;
                 hl = new HL(rkeywords, rstr, rlineComment, undefined, { keywordBold: false });
                 return hl.codeHL(code, theme);
             },
@@ -428,12 +394,13 @@
             html:function (code,theme) {
                 var
                     //关键字
-                    rkeywords = /&lt;(?!!--)\/?((html)|(head)|(body)|(style)|(script)|(DOCTYPE)).*?&gt;/igm,
+                    rkeywords = /&lt;(?!!--)\/?((html)|(head)|(body)|(style)|(script)).*?&gt;/igm,
+                    rstr = /^\s$/;
                     //没有行注释
-                    rlineComment = /^0$/,
+                    rlineComment = /^\s$/,
                     //块注释
                     rblockComment = /&lt;!--.*?--&gt;/gm,
-                    hl = new HL(rkeywords, undefined, rlineComment, rblockComment, { keywordBold: false });
+                    hl = new HL(rkeywords, rstr, rlineComment, rblockComment, { keywordBold: false });
 
                 return hl.codeHL(code, theme);
             },
@@ -462,7 +429,9 @@
                               'new null return super switch ' +
                               'this throw true try typeof var while with regexp',
                    rkeywords = keywordsToReg(keywords),
-                   hl = new HL(rkeywords);
+                   //rreg = /\/(?!(\/)|(>)).*[^\\]\/\w*?(?=[,;\)\.](<br\/>)|$)/gm,
+                   rreg = /^\s$/,
+                   hl = new HL(rkeywords, undefined, undefined, undefined, undefined, rreg);
                 return hl.codeHL(code, theme);
             },
 
@@ -560,7 +529,7 @@
                    //行注释
                    rlineComment = /#.*?(?=(<br\/>)|$)/gm,
                    //python没有块注释
-                   rblockComment = /^0$/gm,
+                   rblockComment = /^\s$/,
                    hl = new HL(rkeywords, rstr, rlineComment, rblockComment);
                 return hl.codeHL(code, theme);
             },
@@ -642,7 +611,7 @@
                    //行注释
                    rlineComment = /'.*?(?=(<br\/>)|$)/gm,
                    //vb没有块注释
-                   rblockComment = /^0$/gm,
+                   rblockComment = /^\s$/,
                    hl = new HL(rkeywords, rstr, rlineComment, rblockComment);
                 return hl.codeHL(code, theme);
             },
@@ -650,16 +619,125 @@
             xml: function (code, theme) {
                 var
                     //关键字
-                    rkeywords = /^0$/,
+                    rkeywords = /^\s$/,
                     //没有行注释
-                    rlineComment = /^0$/,
+                    rlineComment = /^\s$/,
                     //块注释
                     rblockComment = /&lt;!--.*?--&gt;/gm,
                     hl = new HL(rkeywords, undefined, rlineComment, rblockComment);
                 return hl.codeHL(code, theme);
             }
         },
-
+        themes: {
+            simple: {
+                evenBgColor: '#ffffff',  //偶数行背景色
+                oddBgColor: '#f1f1f1',  //奇数行背景色
+                numColor: '#c7c7c7',  //行号颜色
+                numBorderColor: '#6ce26c',  //行号边框颜色
+                numBorderWidth: '3px',  //行号边框宽度
+                color: '#000000',  //常规颜色
+                keywordColor: '#1a76a3',  //关键字颜色
+                strColor: '#0000ff',  //字符串颜色
+                regColor: '#0000ff',  //正则颜色
+                commentColor: '#008200'  //注释颜色
+            },
+            'visual Studio': {
+                evenBgColor: '#ffffff',  //偶数行背景色
+                oddBgColor: '#ffffff',  //奇数行背景色
+                numColor: '#2b91af',  //行号颜色
+                numBorderColor: '#a5a5a5',  //行号边框颜色
+                numBorderWidth: '1px',  //行号边框宽度
+                color: '#000000',  //常规颜色
+                keywordColor: '#0000ff',  //关键字颜色
+                strColor: '#a31515',  //字符串颜色
+                regColor: '#a31515',  //正则颜色
+                commentColor: '#008000'  //注释颜色
+            },
+            eclipse: {
+                evenBgColor: '#ffffff',  //偶数行背景色
+                oddBgColor: '#ffffff',  //奇数行背景色
+                numColor: '#848484',  //行号颜色
+                numBorderColor: '#d4d0c8',  //行号边框颜色
+                numBorderWidth: '1px',  //行号边框宽度
+                color: '#000000',  //常规颜色
+                keywordColor: '#7f0055',  //关键字颜色
+                strColor: '#2a00ff',  //字符串颜色
+                regColor: '#2a00ff',  //正则颜色
+                commentColor: '#647ecb'  //注释颜色
+            },
+            sublime: {
+                evenBgColor: '#272822',  //偶数行背景色
+                oddBgColor: '#272822',  //奇数行背景色
+                numColor: '#8f908a',  //行号颜色
+                numBorderColor: '#464741',  //行号边框颜色
+                numBorderWidth: '1px',  //行号边框宽度
+                color: '#f8f8f2',  //常规颜色
+                keywordColor: '#e92744',  //关键字颜色
+                strColor: '#ae81ff',  //字符串颜色
+                regColor: '#ae81ff',  //正则颜色
+                commentColor: '#75715e'  //注释颜色
+            },
+            django: {
+                evenBgColor: '#0a2b1d',  //偶数行背景色
+                oddBgColor: '#0b2f20',  //奇数行背景色
+                numColor: '#437252',  //行号颜色
+                numBorderColor: '#41a83e',  //行号边框颜色
+                numBorderWidth: '3px',  //行号边框宽度
+                color: '#f8f8f8',  //常规颜色
+                keywordColor: '#96dd3b',  //关键字颜色
+                strColor: '#9df39f',  //字符串颜色
+                regColor: '#9df39f',  //正则颜色
+                commentColor: '#336442'  //注释颜色
+            },
+            emacs: {
+                evenBgColor: '#0f0f0f',  //偶数行背景色
+                oddBgColor: '#000000',  //奇数行背景色
+                numColor: '#bdbdbd',  //行号颜色
+                numBorderColor: '#990000',  //行号边框颜色
+                numBorderWidth: '3px',  //行号边框宽度
+                color: '#d3d3d3',  //常规颜色
+                keywordColor: '#01e7e7',  //关键字颜色
+                strColor: '#ff9e7b',  //字符串颜色
+                regColor: '#ff9e7b',  //正则颜色
+                commentColor: '#ff7d27'  //注释颜色
+            },
+            fadeToGrey: {
+                evenBgColor: '#000000',  //偶数行背景色
+                oddBgColor: '#121212',  //奇数行背景色
+                numColor: '#c3c3c3',  //行号颜色
+                numBorderColor: '#3185b9',  //行号边框颜色
+                numBorderWidth: '3px',  //行号边框宽度
+                color: '#dddddd',  //常规颜色
+                keywordColor: '#d01d33',  //关键字颜色
+                strColor: '#e3e658',  //字符串颜色
+                regColor: '#e3e658',  //正则颜色
+                commentColor: '#696854'  //注释颜色
+            },
+            midNight: {
+                evenBgColor: '#0f192a',  //偶数行背景色
+                oddBgColor: '#0f192a',  //奇数行背景色
+                numColor: '#345067',  //行号颜色
+                numBorderColor: '#435a5f',  //行号边框颜色
+                numBorderWidth: '3px',  //行号边框宽度
+                color: '#d1edff',  //常规颜色
+                keywordColor: '#b43d3d',  //关键字颜色
+                strColor: '#1dc116',  //字符串颜色
+                regColor: '#1dc116',  //正则颜色
+                commentColor: '#428bdd'  //注释颜色
+            },
+            rDark: {
+                evenBgColor: '#1b2426',  //偶数行背景色
+                oddBgColor: '#1b2426',  //奇数行背景色
+                numColor: '#b9bdb6',  //行号颜色
+                numBorderColor: '#435a5f',  //行号边框颜色
+                numBorderWidth: '3px',  //行号边框宽度
+                color: '#b9bdb6',  //常规颜色
+                keywordColor: '#5ba1cf',  //关键字颜色
+                strColor: '#5ce638',  //字符串颜色
+                regColor: '#5ce638',  //正则颜色
+                commentColor: '#878a85'  //注释颜色
+            }
+        },
         /*（接口）代码高亮
         * lang: 语言
         * theme: 主题
