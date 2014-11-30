@@ -57,4 +57,4 @@ wangHighLighter支持多个主题：
 ===
 <b>[wangEditor](https://github.com/wangfupeng1988/wangEditor)</b>是一款基于bootstrap的富文本编辑器，
 现在已经利用wangHighLighter.js为wangEditor实现了“插入代码”的功能！使wangEditor成为一款互联网上不多见的开源的可插入代码的富文本编辑器。
-![](http://images.cnitblog.com/blog/138012/201411/192103320781243.png)
+![](http://images.cnitblog.com/blog/138012/201411/291402452319968.png)
