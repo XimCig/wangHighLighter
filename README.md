@@ -1,8 +1,9 @@
 1. 介绍
 ===
-<b>wangHighLighter</b>是一个将代码进行格式化和高亮显示的javascript插件，可应用到富文本框中。例如[wangEditor](https://github.com/wangfupeng1988/wangEditor)。
+<b>wangHighLighter</b>是一个将代码进行格式化和高亮显示的javascript插件。<br />
+<b>wangHighLighter</b>支持常用的20中编程语言，并提供多种主题风格供选择，让您的代码“动”起来！<br />
+demo演示地址：[http://www.cnblogs.com/wangfupeng1988/p/4192911.html](http://www.cnblogs.com/wangfupeng1988/p/4192911.html)
 ![](http://images.cnitblog.com/blog/138012/201411/192054591091324.png)
-<b>wangHighLighter</b>支持常用的20中编程语言，并提供多种主题风格供选择，让您的代码“动”起来！
 
 2. 使用wangHighLighter
 ===
@@ -53,8 +54,3 @@ $div1.html(highLightCode);
 wangHighLighter支持多个主题：
 ![](http://images.cnitblog.com/blog/138012/201411/192050281563968.png)
 
-3. 应用于wangEditor
-===
-<b>[wangEditor](https://github.com/wangfupeng1988/wangEditor)</b>是一款基于bootstrap的富文本编辑器，
-现在已经利用wangHighLighter.js为wangEditor实现了“插入代码”的功能！使wangEditor成为一款互联网上不多见的开源的可插入代码的富文本编辑器。
-![](http://images.cnitblog.com/blog/138012/201411/291402452319968.png)
