@@ -1,7 +1,7 @@
 ﻿/* wangHighLighter 
 *  1.0.0
 * 王福朋
-* 2014-11-21
+* 2015-01-02
 */
 (function (window, $, undefined) {
     if (!$) {
@@ -218,13 +218,13 @@
                 tr = '',
                 trArray = [],
 
-                tdNumTemp = '<td style="border-right-color:${0}; border-right-width:${1}; color:${2}; border-right-style:solid; text-align:right; padding-right:5px; width:40px;"> ${content} </td>',
+                tdNumTemp = '<td style="border:0px; border-right-color:${0}; border-right-width:${1}; color:${2}; border-right-style:solid; text-align:right; padding-right:5px; width:40px;"> ${content} </td>',
                 tdNumTemp = tdNumTemp.replace('${0}', theme.numBorderColor)
                                      .replace('${1}', theme.numBorderWidth)
                                      .replace('${2}', theme.numColor),
                 tdNum = '',
 
-                tdCodeTemp = '<td style="padding-left:10px; text-align:left;">${content}</td>',
+                tdCodeTemp = '<td style="border:0px; padding-left:10px; text-align:left;">${content}</td>',
                 tdCode = '',
 
                 //按换行分数组
