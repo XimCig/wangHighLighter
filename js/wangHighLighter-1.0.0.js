@@ -1,7 +1,7 @@
 ﻿/* wangHighLighter 
 *  1.0.0
 * 王福朋
-* 2015-01-02
+* 2015-01-06
 */
 (function (window, $, undefined) {
     if (!$) {
@@ -14,7 +14,7 @@
         //默认的正则表达式
         basicRegs = {
             rkeyword: /^\s$/, 
-            rstr: /(['"]).*?[^\\]\1/gm,  // 默认【"..." 或 '...'】 （包含字符和字符串两种类型）
+            rstr: /(['"])(\1|(.*?[^\\]\1))/g,  // 默认【"..." 或 '...'】 （包含字符和字符串两种类型）
             rreg: /^\s$/,
             rlineComment: /\/\/.*?(?=(<br\/>)|$)/gm,  // 默认【//...】
             rblockComment: /\/\*.*?\*\//gm,  //默认【/*...*/】
@@ -293,7 +293,7 @@
             },
 
             'C#': function (code, theme) {
-                var keywords = 'abstract as base bool break byte case catch char checked class const ' +
+                var keywords = 'var abstract as base bool break byte case catch char checked class const ' +
 					          'continue decimal default delegate do double else enum event explicit ' +
 					          'extern false finally fixed float for foreach get goto if implicit in int ' +
 					          'interface internal is lock long namespace new null object operator out ' +
@@ -525,7 +525,7 @@
 					            'lambda not or pass print raise return try yield while',
                    rkeywords = keywordsToReg(keywords),
                    //字符串
-                   rstr = /(['"(''')(""")]).*?[^\\]\1/gm,
+                   rstr = /(['"(''')(""")])(\1|(.*?[^\\]\1))/gm,
                    //行注释
                    rlineComment = /#.*?(?=(<br\/>)|$)/gm,
                    //python没有块注释
@@ -606,13 +606,11 @@
 					            'Structure Sub SyncLock Then Throw To True Try TypeOf Unicode Until ' +
 					            'Variant When While With WithEvents WriteOnly Xor',
                    rkeywords = keywordsToReg(keywords),
-                   //字符串
-                   rstr = /(").*?[^\\]\1/gm,
                    //行注释
                    rlineComment = /'.*?(?=(<br\/>)|$)/gm,
                    //vb没有块注释
                    rblockComment = /^\s$/,
-                   hl = new HL(rkeywords, rstr, rlineComment, rblockComment);
+                   hl = new HL(rkeywords, null, rlineComment, rblockComment);
                 return hl.codeHL(code, theme);
             },
 
